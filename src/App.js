@@ -1,13 +1,20 @@
 import React, { Component } from 'react';
-// material-ui
+// react Components
 import Paper from 'material-ui/Paper';
 import IconButton from 'material-ui/IconButton';
 import Divider from 'material-ui/Divider';
+import Menu from 'material-ui/Menu';
+import MenuItem from 'material-ui/MenuItem';
 import SettingsIcon from 'material-ui/svg-icons/action/settings';
-//
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.min.css';
+// other third parties
 import mqtt from 'mqtt';
-
+// Components
+import { PublishSubscribe, SubscribedTopic } from './Content';
+// style
 import styles from './style';
+import './custom-toast.css';
 
 const CONNECTION_STATUS = {
   DISCONNECTED: 'DISCONNECTED',
@@ -15,12 +22,18 @@ const CONNECTION_STATUS = {
   RECONNECTING: 'RECONNECTING'
 };
 
+const CONTENT_PAGE = {
+  PUBLISH_SUBSCRIBE: 'PUBLISH_SUBSCRIBE',
+  SUBSCRIBED_TOPIC: 'SUBSCRIBED_TOPIC'
+};
+
 class App extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      connectionStatus: CONNECTION_STATUS.DISCONNECTED
+      connectionStatus: CONNECTION_STATUS.DISCONNECTED,
+      contentPage: CONTENT_PAGE.PUBLISH_SUBSCRIBE
     };
 
     this.mqttClient = null;
@@ -102,7 +115,22 @@ class App extends Component {
     return (<span style={{ marginRight: '5px' }}>{statusText}</span>);
   }
 
+  renderContent() {
+    const { contentPage } = this.state;
+
+    switch (contentPage) {
+      case CONTENT_PAGE.PUBLISH_SUBSCRIBE:
+        return <PublishSubscribe />;
+      case CONTENT_PAGE.SUBSCRIBED_TOPIC:
+        return <SubscribedTopic />;
+      default:
+        return null;
+    }
+  }
+
   render() {
+    const { contentPage } = this.state;
+
     return (
       <div style={styles.container}>
         <Paper style={styles.inner}>
@@ -119,14 +147,31 @@ class App extends Component {
           </div>
           <div style={styles.bottom}>
             <div style={styles.menu}>
-              <span style={styles.menuItem}>Publish</span>
-              <span style={styles.menuItem}>Subscribe</span>
-              <Divider />
+              <Menu style={{ width: '100%' }}>
+                <MenuItem
+                  primaryText="Subscribe / Publish"
+                  style={{
+                    backgroundColor: contentPage === CONTENT_PAGE.PUBLISH_SUBSCRIBE ? 'rgba(0, 0, 0, 0.2)' : null
+                  }}
+                  onClick={() => { this.setState({ contentPage: CONTENT_PAGE.PUBLISH_SUBSCRIBE }); toast('hello'); }}
+                />
+                <Divider />
+              </Menu>
             </div>
             <div style={styles.content}>
+              {this.renderContent()}
             </div>
           </div>
         </Paper>
+        <ToastContainer
+          position="top-right"
+          type="default"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          pauseOnHover
+        />
       </div>
     );
   }

@@ -1,3 +1,5 @@
+import theme from './custom-mui-theme';
+
 export default {
   container: {
     width: '100%',
@@ -15,11 +17,11 @@ export default {
   },
   header: {
     height: '50px',
-    backgroundColor: '#00A1C9',
+    backgroundColor: theme.palette.primary1Color,
     display: 'flex'
   },
   headerLeft: {
-    width: '150px',
+    width: '200px',
     borderRight: '1px solid white',
     display: 'flex',
     justifyContent: 'center',
@@ -38,15 +40,17 @@ export default {
     display: 'flex'
   },
   menu: {
-    width: '150px',
+    width: '200px',
     borderRight: '1px solid #cccccc',
     display: 'flex',
-    flexDirection: 'column'
+    flexDirection: 'column',
+    overflow: 'hidden'
   },
   menuItem: {
     padding: '5px'
   },
   content: {
-    flexGrow: 1
+    flexGrow: 1,
+    padding: '8px'
   }
 };

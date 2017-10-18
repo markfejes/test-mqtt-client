@@ -1,0 +1,16 @@
+.dark-toast{
+  background: #3F51B5;
+  color: #fff;
+}
+
+.dark-toast > .toastify__close{
+  color: #fff;
+}
+
+.transparent-progress{
+  background:  rgba(255,255,255,.7);
+}
+
+.fancy-progress{
+  background: repeating-radial-gradient(red, yellow 10%, green 15%);
+}
