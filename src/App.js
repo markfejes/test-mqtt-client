@@ -8,13 +8,13 @@ import MenuItem from 'material-ui/MenuItem';
 import SettingsIcon from 'material-ui/svg-icons/action/settings';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
-// other third parties
-import mqtt from 'mqtt';
 // Components
 import { PublishSubscribe, SubscribedTopic } from './Content';
 // style
 import styles from './style';
 import './custom-toast.css';
+
+import mqttClient from './MQTTClient/MQTTClient';
 
 const CONNECTION_STATUS = {
   DISCONNECTED: 'DISCONNECTED',
@@ -33,65 +33,71 @@ class App extends Component {
 
     this.state = {
       connectionStatus: CONNECTION_STATUS.DISCONNECTED,
-      contentPage: CONTENT_PAGE.PUBLISH_SUBSCRIBE
+      contentPage: CONTENT_PAGE.PUBLISH_SUBSCRIBE,
+      selectedSubscribedTopic: '',
+      subscribedTopics: [],
+      messages: {}
     };
 
     this.mqttClient = null;
   }
 
   componentDidMount() {
-    this.mqttClient = mqtt.connect('mqtt://127.0.0.1:3300', {
-      reconnectPeriod: 5000
-    });
-    // this.mqttClient = mqtt.connect('mqtt://test.mosquitto.org');
+    mqttClient.connect('mqtt://127.0.0.1:3300');
+    const client = mqttClient.getClient();
 
-    this.mqttClient.on('connect', () => {
-      this.setState({
-        connectionStatus: CONNECTION_STATUS.CONNECTED
-      });
-      this.mqttClient.subscribe('test_topic');
-      this.mqttClient.publish('test_topi', 'Hello mqtt buddies');
+    client.on('connect', () => {
+      this.setState({ connectionStatus: CONNECTION_STATUS.CONNECTED });
     });
 
-    this.mqttClient.on('reconnect', () => {
-      this.setState({
-        connectionStatus: CONNECTION_STATUS.RECONNECTING
-      });
+    client.on('reconnect', () => {
+      this.setState({ connectionStatus: CONNECTION_STATUS.RECONNECTING });
     });
 
-    // this.mqttClient.on('close', () => {
-    //   this.setState({
-    //     connectionStatus: CONNECTION_STATUS.DISCONNECTED
-    //   });
-    // });
-
-    this.mqttClient.on('offline', () => {
-      this.setState({
-        connectionStatus: CONNECTION_STATUS.DISCONNECTED
-      });
+    client.on('offline', () => {
+      this.setState({ connectionStatus: CONNECTION_STATUS.DISCONNECTED });
     });
+  }
 
-    this.mqttClient.on('message', (topic, message) => {
-      // message is Buffer
-      console.log(message.toString());
+  subscribeToTopic(topic) {
+    mqttClient.subscribe(topic, (err, granted) => {
+      if (!err && granted.length > 0) {
+        toast(`Subscribed to topic: "${topic}"`, {
+          className: 'dark-toast',
+          progressClassName: 'transparent-progress',
+          autoClose: 5000
+        });
+        this.setState({
+          subscribedTopics: [...this.state.subscribedTopics, topic],
+          // switch content page
+          contentPage: CONTENT_PAGE.SUBSCRIBED_TOPIC,
+          selectedSubscribedTopic: topic,
+          messages: {
+            ...this.state.messages,
+            [topic]: []
+          }
+        });
+        // subscribe to message event
+        const client = mqttClient.getClient();
+        client.on('message', (topicMsgIn, message) => {
+          if (topic === topicMsgIn) {
+            this.setState({
+              ...this.state.messages,
+              messages: {
+                [topic]: [{
+                  date: Date.now(),
+                  data: message.toString()
+                }, ...this.state.messages[topic]]
+              }
+            });
+          }
+        });
+      }
     });
+  }
 
-    this.mqttClient.on('error', (error) => {
-      // message is Buffer
-      console.error(error);
-    });
-
-    this.mqttClient.on('packetsend', (packet) => {
-      // message is Buffer
-      console.log('packet send:');
-      console.log(packet);
-    });
-
-    this.mqttClient.on('packetreceive', (packet) => {
-      // message is Buffer
-      console.log('packet receive');
-      console.log(packet);
-    });
+  publishToTopic(topic, message) {
+    mqttClient.publish(topic, message);
   }
 
   renderConnectionStatus() {
@@ -116,20 +122,31 @@ class App extends Component {
   }
 
   renderContent() {
-    const { contentPage } = this.state;
+    const { contentPage, selectedSubscribedTopic, messages } = this.state;
 
     switch (contentPage) {
       case CONTENT_PAGE.PUBLISH_SUBSCRIBE:
-        return <PublishSubscribe />;
+        return (
+          <PublishSubscribe
+            subscribeFunc={this.subscribeToTopic.bind(this)}
+            publishFunc={this.publishToTopic.bind(this)}
+          />
+        );
       case CONTENT_PAGE.SUBSCRIBED_TOPIC:
-        return <SubscribedTopic />;
+        return (
+          <SubscribedTopic
+            publishFunc={this.publishToTopic.bind(this)}
+            topicName={selectedSubscribedTopic}
+            messages={messages[selectedSubscribedTopic]}
+          />
+        );
       default:
         return null;
     }
   }
 
   render() {
-    const { contentPage } = this.state;
+    const { contentPage, subscribedTopics, selectedSubscribedTopic } = this.state;
 
     return (
       <div style={styles.container}>
@@ -153,9 +170,27 @@ class App extends Component {
                   style={{
                     backgroundColor: contentPage === CONTENT_PAGE.PUBLISH_SUBSCRIBE ? 'rgba(0, 0, 0, 0.2)' : null
                   }}
-                  onClick={() => { this.setState({ contentPage: CONTENT_PAGE.PUBLISH_SUBSCRIBE }); toast('hello'); }}
+                  onClick={() => { this.setState({ contentPage: CONTENT_PAGE.PUBLISH_SUBSCRIBE }); }}
                 />
                 <Divider />
+                {
+                  subscribedTopics.map(subscribedTopic => (
+                    <MenuItem
+                      key={subscribedTopic}
+                      primaryText={subscribedTopic}
+                      style={{
+                        backgroundColor: (contentPage === CONTENT_PAGE.SUBSCRIBED_TOPIC) && (selectedSubscribedTopic === subscribedTopic) ?
+                          'rgba(0, 0, 0, 0.2)' : null
+                      }}
+                      onClick={() => {
+                        this.setState({
+                          contentPage: CONTENT_PAGE.SUBSCRIBED_TOPIC,
+                          selectedSubscribedTopic: subscribedTopic
+                        });
+                      }}
+                    />
+                  ))
+                }
               </Menu>
             </div>
             <div style={styles.content}>

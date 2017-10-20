@@ -16,9 +16,10 @@ export default {
     flexDirection: 'column'
   },
   header: {
-    height: '50px',
+    height: '60px',
     backgroundColor: theme.palette.primary1Color,
-    display: 'flex'
+    display: 'flex',
+    flexShrink: 0
   },
   headerLeft: {
     width: '200px',
