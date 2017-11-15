@@ -39,6 +39,9 @@ class App extends Component {
       messages: {}
     };
 
+    // bind functions
+    this.clearMessagesInTopic = this.clearMessagesInTopic.bind(this);
+
     this.mqttClient = null;
   }
 
@@ -100,6 +103,15 @@ class App extends Component {
     mqttClient.publish(topic, message);
   }
 
+  clearMessagesInTopic(topic) {
+    this.setState({
+      messages: {
+        ...this.state.messages,
+        [topic]: []
+      }
+    });
+  }
+
   renderConnectionStatus() {
     const { connectionStatus } = this.state;
     let statusText;
@@ -138,6 +150,7 @@ class App extends Component {
             publishFunc={this.publishToTopic.bind(this)}
             topicName={selectedSubscribedTopic}
             messages={messages[selectedSubscribedTopic]}
+            clearMessages={this.clearMessagesInTopic}
           />
         );
       default:

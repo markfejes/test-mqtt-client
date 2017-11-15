@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
+import RaisedButton from 'material-ui/RaisedButton';
 import Publisher from '../Publisher/Publisher';
 import MQTTMessage from './MQTTMessage/MQTTMessage';
 
@@ -18,8 +19,7 @@ const styles = {
 
 class SubscribedTopic extends Component {
   render() {
-    const { publishFunc, topicName, messages } = this.props;
-    console.log(messages);
+    const { publishFunc, topicName, messages, clearMessages } = this.props;
 
     return (
       <div style={styles.container}>
@@ -34,6 +34,13 @@ class SubscribedTopic extends Component {
             />))
         }
         </div>
+        <RaisedButton
+          label="Delete messages"
+          secondary
+          onClick={() => {
+            clearMessages(topicName);
+          }}
+        />
       </div>
     );
   }
@@ -42,7 +49,8 @@ class SubscribedTopic extends Component {
 SubscribedTopic.propTypes = {
   publishFunc: PropTypes.func.isRequired,
   topicName: PropTypes.string.isRequired,
-  messages: PropTypes.array.isRequired
+  messages: PropTypes.array.isRequired,
+  clearMessages: PropTypes.func.isRequired
 };
 
 export default SubscribedTopic;
